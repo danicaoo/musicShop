@@ -1,0 +1,179 @@
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { addNewMusician } from '../features/musicianSlice';
+
+const AddMusicianForm = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: '',
+    birthDate: '',
+    country: '',
+    bio: '',
+    roles: []
+  });
+  const [errors, setErrors] = useState({});
+  const [submitStatus, setSubmitStatus] = useState(null);
+
+  const validRoles = ['VOCALIST', 'GUITARIST', 'BASSIST', 'DRUMMER', 'KEYBOARDIST', 'COMPOSER', 'CONDUCTOR', 'PRODUCER'];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const handleRoleChange = (role) => {
+    setFormData(prev => {
+      const newRoles = prev.roles.includes(role)
+        ? prev.roles.filter(r => r !== role)
+        : [...prev.roles, role];
+      
+      return { ...prev, roles: newRoles };
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Валидация
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'Имя обязательно';
+    if (formData.roles.length === 0) newErrors.roles = 'Выберите хотя бы одну роль';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    
+    try {
+      await dispatch(addNewMusician({
+        ...formData,
+        birthDate: formData.birthDate || null
+      }));
+      
+      setSubmitStatus('success');
+      setTimeout(() => {
+        navigate('/musicians');
+      }, 1500);
+    } catch (error) {
+      setSubmitStatus('error');
+      setErrors({ server: error.message });
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Добавить нового музыканта</h2>
+      
+      {submitStatus === 'success' && (
+        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
+          Музыкант успешно добавлен!
+        </div>
+      )}
+      
+      {submitStatus === 'error' && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          {errors.server || 'Произошла ошибка при добавлении музыканта'}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="name">
+            Полное имя *
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+              errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+            }`}
+            placeholder="Введите полное имя музыканта"
+          />
+          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+        </div>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="birthDate">
+            Дата рождения
+          </label>
+          <input
+            type="date"
+            id="birthDate"
+            name="birthDate"
+            value={formData.birthDate}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2" htmlFor="country">
+            Страна
+          </label>
+          <input
+            type="text"
+            id="country"
+            name="country"
+            value={formData.country}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Введите страну"
+          />
+        </div>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">
+            Роли *
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {validRoles.map(role => (
+              <label key={role} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.roles.includes(role)}
+                  onChange={() => handleRoleChange(role)}
+                  className="mr-2 h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">{role}</span>
+              </label>
+            ))}
+          </div>
+          {errors.roles && <p className="text-red-500 text-sm mt-1">{errors.roles}</p>}
+        </div>
+        
+        <div className="mb-6">
+          <label className="block text-gray-700 mb-2" htmlFor="bio">
+            Биография
+          </label>
+          <textarea
+            id="bio"
+            name="bio"
+            value={formData.bio}
+            onChange={handleChange}
+            rows="4"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Расскажите о музыканте..."
+          />
+        </div>
+        
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+        >
+          Сохранить музыканта
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default AddMusicianForm;

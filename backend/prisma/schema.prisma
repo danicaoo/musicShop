@@ -1,0 +1,137 @@
+// УДАЛИТЬ ВСЮ МОДЕЛЬ LABEL И ВСЕ ЕЁ УПОМИНАНИЯ
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native", "linux-arm64-openssl-3.0.x", "darwin-arm64"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm, pgcrypto]
+}
+
+enum Role {
+  VOCALIST
+  GUITARIST
+  BASSIST
+  DRUMMER
+  KEYBOARDIST
+  COMPOSER
+  CONDUCTOR
+  PRODUCER
+}
+
+model Musician {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  birthDate DateTime?
+  country   String?
+  bio       String?
+  roles     Role[]
+  ensembles EnsembleMember[]
+  soloAlbums Album[] @relation("SoloAlbums")
+}
+
+model Ensemble {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  formationDate  DateTime
+  dissolutionDate DateTime?
+  type           String
+  members        EnsembleMember[]
+  albums         Album[]
+}
+
+model EnsembleMember {
+  id          Int      @id @default(autoincrement())
+  ensemble    Ensemble @relation(fields: [ensembleId], references: [id])
+  ensembleId  Int
+  musician    Musician @relation(fields: [musicianId], references: [id])
+  musicianId  Int
+  role        String
+  startDate   DateTime
+  endDate     DateTime?
+}
+
+model Composition {
+  id           Int        @id @default(autoincrement())
+  title        String
+  duration     Int
+  creationYear Int
+  genre        String
+  recordings   Recording[]
+}
+
+model Recording {
+  id            Int        @id @default(autoincrement())
+  composition   Composition @relation(fields: [compositionId], references: [id])
+  compositionId Int
+  recordingDate DateTime
+  studio        String?
+  albums        Track[]
+}
+
+model Album {
+  id          Int      @id @default(autoincrement())
+  catalogNumber String    // Эта строка критически важна
+  title       String
+  releaseDate DateTime
+  musician    Musician? @relation("SoloAlbums", fields: [musicianId], references: [id])
+  musicianId  Int?
+  ensemble    Ensemble? @relation(fields: [ensembleId], references: [id])
+  ensembleId  Int?
+  tracks      Track[]
+  inventories Inventory[]
+}
+
+model Track {
+  id          Int      @id @default(autoincrement())
+  album       Album    @relation(fields: [albumId], references: [id])
+  albumId     Int
+  recording   Recording @relation(fields: [recordingId], references: [id])
+  recordingId Int
+  position    Int
+}
+
+model Inventory {
+  id               Int      @id @default(autoincrement())
+  album            Album    @relation(fields: [albumId], references: [id])
+  albumId          Int
+  wholesalePrice   Float
+  retailPrice      Float
+  lastYearSales    Int      @default(0)
+  currentYearSales Int      @default(0)
+  unsold           Int      @default(0)
+  sales            Sale[]
+}
+
+model Sale {
+  id           Int       @id @default(autoincrement())
+  inventory    Inventory @relation(fields: [inventoryId], references: [id])
+  inventoryId  Int
+  saleDate     DateTime  @default(now())
+  quantity     Int
+}
+
+model Composition {
+  id           Int        @id @default(autoincrement())
+  title        String
+  duration     Int
+  creationYear Int?       // Может быть null
+  genre        String?    // Может быть null
+  recordings   Recording[]
+}
+
+model PrismaMigrations {
+  id          String   @id
+  checksum    String
+  finished_at DateTime?
+  migration_name String
+  logs        String?
+  rolled_back_at DateTime?
+  started_at  DateTime @default(now())
+
+  @@map("_prisma_migrations")
+}

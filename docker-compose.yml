@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/music_shop
+      - JWT_SECRET=your_jwt_secret
+    ports:
+      - "5001:5000"  # Изменён порт
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3331:80"
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:16.3-bookworm
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: music_shop
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
